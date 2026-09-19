@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zeion • Security</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#030812;color:#eef6ff;font-family:Arial,sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 50% 35%,#003b4b55,transparent 42%);pointer-events:none}
+.wrap{width:min(760px,92%);margin:auto;padding:28px 0 50px}.top{height:76px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #172435}
+.brand{font-size:25px;font-weight:900;letter-spacing:1px}.brand b{color:#08e0f5}.online{border:1px solid #075e5b;border-radius:28px;padding:11px 18px;color:#2ce7b8;box-shadow:0 0 20px #00d9aa22}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#19e0a0;margin-right:8px;box-shadow:0 0 12px #19e0a0}
+.hero{text-align:center;padding:70px 0 30px}.logo{font-size:64px;font-weight:1000;letter-spacing:-4px;color:#12e8f5;text-shadow:0 0 28px #00d9ff44}.hero h1{font-size:38px;margin:25px 0 12px}.hero h1 span{color:#09dff3}.hero p{color:#8292a9;font-size:18px;line-height:1.5}
+.card{background:#0b1323dd;border:1px solid #263247;border-radius:22px;padding:28px;box-shadow:0 20px 70px #0008}.login{max-width:600px;margin:25px auto}.title{font-size:21px;font-weight:800;margin-bottom:18px}label{display:block;color:#91a0b5;font-size:13px;margin:16px 0 7px}input,textarea{width:100%;background:#050a18;border:1px solid #25324a;color:#fff;border-radius:13px;padding:14px;outline:none}textarea{min-height:280px;resize:vertical;font-family:monospace}input:focus,textarea:focus{border-color:#10d9ed}button{width:100%;border:0;border-radius:13px;padding:14px;margin-top:16px;background:linear-gradient(90deg,#09d9e9,#438cff);color:#001018;font-weight:900;cursor:pointer}.muted{color:#728198;font-size:13px;margin-top:10px;min-height:18px}.hidden{display:none}.result{margin-top:18px;padding:17px;border:1px solid #203047;border-radius:14px;background:#050914}.key{font-size:11px;color:#718197;text-transform:uppercase;margin-top:13px}.val{margin-top:5px;font-family:monospace;word-break:break-all}.loader{padding:12px;margin-top:6px;background:#02050a;border-radius:9px;color:#7edcff;word-break:break-all;font:12px monospace}.item{padding:14px 0;border-bottom:1px solid #182335}.item:last-child{border:0}.code{color:#43cfff;font:13px monospace;margin-top:5px}.date{color:#647289;font-size:11px;margin-top:5px}@media(max-width:600px){.wrap{width:94%;padding-top:10px}.hero{padding:50px 0 20px}.logo{font-size:48px}.hero h1{font-size:29px}.hero p{font-size:16px}.card{padding:18px}.online{padding:9px 12px;font-size:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><div class="brand">ZEION<b>PROJECT</b></div><div class="online"><i class="dot"></i>ONLINE</div></div>
+
+<div id="login">
+<div class="hero"><div class="logo">ZEION</div><h1>Lua Script <span>Service</span></h1><p>Secure script management panel</p></div>
+<div class="card login"><div class="title">Access Panel</div><label>Access Code</label><input id="pass" type="password" placeholder="Enter Access Code"><button onclick="login()">ENTER PANEL</button><div id="ls" class="muted"></div></div>
+</div>
+
+<div id="panel" class="hidden">
+<div class="hero"><div class="logo">ZEION</div><h1>Script <span>Service</span></h1><p>Upload and manage your Luau scripts</p></div>
+<div class="card"><div class="title">Upload Script</div><label>Script Name / ID</label><input id="name" placeholder="Example: BloxFruits"><label>Luau Script</label><textarea id="src" placeholder="Paste your Luau script here..."></textarea><button onclick="upload()">UPLOAD SCRIPT</button><div id="us" class="muted"></div><div id="result" class="result hidden"><div class="key">Script Name / ID</div><div id="rid" class="val"></div><div class="key">8-Digit Code</div><div id="rcode" class="val"></div><div class="key">Loader</div><div id="loader" class="loader"></div><button onclick="copyLoader()">COPY LOADER</button></div></div>
+<div class="card" style="margin-top:20px"><div class="title">Script History</div><div id="history">Loading...</div></div>
+</div>
+</div>
+<script>
+let token=sessionStorage.getItem("zeion_token"),current="";
+if(token)show();
+async function login(){
+ const s=document.getElementById("ls"),p=document.getElementById("pass").value;s.textContent="Checking...";
+ try{const r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:p})}),d=await r.json();if(!r.ok)throw Error(d.error||"Login failed");token=d.token;sessionStorage.setItem("zeion_token",token);show()}catch(e){s.textContent=e.message}
+}
+function show(){document.getElementById("login").classList.add("hidden");document.getElementById("panel").classList.remove("hidden");history()}
+async function upload(){
+ const name=document.getElementById("name").value.trim(),code=document.getElementById("src").value,s=document.getElementById("us"),box=document.getElementById("result");
+ s.textContent="Uploading...";box.classList.add("hidden");
+ try{const r=await fetch("/api/create",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({name,code})}),d=await r.json();if(!r.ok)throw Error(d.error||"Upload failed");current=d.loadstring;document.getElementById("rid").textContent=d.id;document.getElementById("rcode").textContent=d.randomCode;document.getElementById("loader").textContent=d.loadstring;box.classList.remove("hidden");s.textContent="Upload successful.";document.getElementById("src").value="";history()}catch(e){s.textContent=e.message}
+}
+async function history(){
+ const box=document.getElementById("history");
+ try{const r=await fetch("/api/history",{headers:{"Authorization":"Bearer "+token}}),d=await r.json();if(!r.ok)throw Error(d.error||"Failed");if(!d.length){box.textContent="No scripts uploaded.";return}box.innerHTML=d.map(x=>`<div class="item"><b>${esc(x.name||x.id)}</b><div class="code">8-Digit Code: ${esc(x.loader_code||"-")}</div><div class="date">${esc(new Date(x.created_at).toLocaleString())}</div></div>`).join("")}catch(e){box.textContent=e.message}
+}
+async function copyLoader(){try{await navigator.clipboard.writeText(current);alert("Loader copied")}catch{alert("Copy failed")}}
+function esc(x){return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+document.getElementById("pass").addEventListener("keydown",e=>{if(e.key==="Enter")login()});
+</script>
+</body>
+</html>
